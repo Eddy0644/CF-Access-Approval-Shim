@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title><%= title %></title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: linear-gradient(135deg, #434343 0%, #000000 100%);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+    .card {
+      background: white;
+      border-radius: 16px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.4);
+      max-width: 440px;
+      width: 100%;
+      padding: 40px;
+    }
+    .icon {
+      width: 64px;
+      height: 64px;
+      background: #dc3545;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 24px;
+    }
+    .icon svg {
+      width: 32px;
+      height: 32px;
+      fill: white;
+    }
+    h1 {
+      font-size: 24px;
+      color: #dc3545;
+      text-align: center;
+      margin-bottom: 8px;
+    }
+    .subtitle {
+      color: #666;
+      text-align: center;
+      margin-bottom: 32px;
+      font-size: 14px;
+    }
+    .reject-reason {
+      background: #fff5f5;
+      border: 1px solid #fed7d7;
+      border-radius: 8px;
+      padding: 16px;
+      margin-bottom: 24px;
+    }
+    .reject-reason-label {
+      font-size: 12px;
+      font-weight: 600;
+      color: #c53030;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 8px;
+    }
+    .reject-reason-text {
+      color: #742a2a;
+      font-size: 14px;
+    }
+    .request-info {
+      background: #f8f9fa;
+      border-radius: 8px;
+      padding: 12px 16px;
+      margin-bottom: 24px;
+      font-size: 13px;
+      color: #666;
+    }
+    .btn {
+      width: 100%;
+      padding: 14px 24px;
+      border: none;
+      border-radius: 8px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: transform 0.2s, box-shadow 0.2s;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+    }
+    .btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 20px rgba(102, 126, 234, 0.4);
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="icon">
+      <svg viewBox="0 0 24 24"><path d="M12 2C6.47 2 2 6.47 2 12s4.47 10 10 10 10-4.47 10-10S17.53 2 12 2zm5 13.59L15.59 17 12 13.41 8.41 17 7 15.59 10.59 12 7 8.41 8.41 7 12 10.59 15.59 7 17 8.41 13.41 12 17 15.59z"/></svg>
+    </div>
+    <h1>Access Denied</h1>
+    <p class="subtitle">Your access request has been rejected</p>
+
+    <% if (request.rejectReason) { %>
+    <div class="reject-reason">
+      <div class="reject-reason-label">Reason</div>
+      <div class="reject-reason-text"><%= request.rejectReason %></div>
+    </div>
+    <% } else { %>
+    <div class="reject-reason">
+      <div class="reject-reason-label">Reason</div>
+      <div class="reject-reason-text">No reason provided</div>
+    </div>
+    <% } %>
+
+    <div class="request-info">
+      <strong>Request ID:</strong> <%= request.id.substring(0, 8) %>...<br>
+      <strong>Submitted:</strong> <%= new Date(request.createdAt).toLocaleString() %>
+    </div>
+
+    <form method="post" action="/interaction/<%= uid %>/cancel">
+      <button type="submit" class="btn">Submit New Request</button>
+    </form>
+  </div>
+</body>
+</html>

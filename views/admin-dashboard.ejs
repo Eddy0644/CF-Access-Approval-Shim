@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title><%= title %></title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #f5f6fa;
+      min-height: 100vh;
+    }
+    .header {
+      background: #1a1a2e;
+      color: white;
+      padding: 16px 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .header h1 {
+      font-size: 20px;
+      font-weight: 600;
+    }
+    .header-actions {
+      display: flex;
+      gap: 16px;
+      align-items: center;
+    }
+    .header-actions span {
+      font-size: 14px;
+      opacity: 0.8;
+    }
+    .header-actions a {
+      color: white;
+      text-decoration: none;
+      font-size: 14px;
+      opacity: 0.8;
+      transition: opacity 0.2s;
+    }
+    .header-actions a:hover {
+      opacity: 1;
+    }
+    .container {
+      max-width: 1000px;
+      margin: 0 auto;
+      padding: 24px;
+    }
+    .section {
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      margin-bottom: 24px;
+      overflow: hidden;
+    }
+    .section-header {
+      background: #f8f9fa;
+      padding: 16px 20px;
+      border-bottom: 1px solid #e9ecef;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .section-header h2 {
+      font-size: 16px;
+      color: #333;
+    }
+    .badge {
+      display: inline-block;
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 600;
+    }
+    .badge-pending {
+      background: #fff3cd;
+      color: #856404;
+    }
+    .badge-approved {
+      background: #d4edda;
+      color: #155724;
+    }
+    .badge-rejected {
+      background: #f8d7da;
+      color: #721c24;
+    }
+    .request-list {
+      list-style: none;
+    }
+    .request-item {
+      padding: 16px 20px;
+      border-bottom: 1px solid #e9ecef;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .request-item:last-child {
+      border-bottom: none;
+    }
+    .request-info h3 {
+      font-size: 14px;
+      color: #333;
+      margin-bottom: 4px;
+    }
+    .request-meta {
+      font-size: 12px;
+      color: #888;
+    }
+    .request-actions a {
+      display: inline-block;
+      padding: 8px 16px;
+      background: #1a1a2e;
+      color: white;
+      text-decoration: none;
+      border-radius: 6px;
+      font-size: 13px;
+      transition: background 0.2s;
+    }
+    .request-actions a:hover {
+      background: #2d2d4a;
+    }
+    .empty-state {
+      padding: 40px;
+      text-align: center;
+      color: #888;
+    }
+    .empty-state svg {
+      width: 48px;
+      height: 48px;
+      fill: #ddd;
+      margin-bottom: 16px;
+    }
+    .quick-actions {
+      display: flex;
+      gap: 8px;
+    }
+    .btn-sm {
+      padding: 6px 12px;
+      border: none;
+      border-radius: 4px;
+      font-size: 12px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: opacity 0.2s;
+    }
+    .btn-approve {
+      background: #28a745;
+      color: white;
+    }
+    .btn-reject {
+      background: #dc3545;
+      color: white;
+    }
+    .btn-sm:hover {
+      opacity: 0.9;
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>Access Approval Dashboard</h1>
+    <div class="header-actions">
+      <span>Logged in as <%= admin.user %></span>
+      <a href="/admin/logout">Logout</a>
+    </div>
+  </div>
+
+  <div class="container">
+    <div class="section">
+      <div class="section-header">
+        <h2>Pending Requests</h2>
+        <span class="badge badge-pending"><%= pending.length %> pending</span>
+      </div>
+      <% if (pending.length > 0) { %>
+      <ul class="request-list">
+        <% pending.forEach(req => { %>
+        <li class="request-item">
+          <div class="request-info">
+            <h3><%= req.id.substring(0, 8) %>...</h3>
+            <div class="request-meta">
+              IP: <%= req.clientIp %> |
+              <%= new Date(req.createdAt).toLocaleString() %>
+              <% if (req.clientReason) { %> | "<%= req.clientReason.substring(0, 50) %><%= req.clientReason.length > 50 ? '...' : '' %>"<% } %>
+            </div>
+          </div>
+          <div class="request-actions">
+            <div class="quick-actions">
+              <form method="post" action="/admin/approve/<%= req.id %>" style="display: inline;">
+                <button type="submit" class="btn-sm btn-approve">Approve</button>
+              </form>
+              <form method="post" action="/admin/reject/<%= req.id %>" style="display: inline;">
+                <button type="submit" class="btn-sm btn-reject">Reject</button>
+              </form>
+              <a href="/admin/review/<%= req.id %>">Details</a>
+            </div>
+          </div>
+        </li>
+        <% }); %>
+      </ul>
+      <% } else { %>
+      <div class="empty-state">
+        <svg viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
+        <p>No pending requests</p>
+      </div>
+      <% } %>
+    </div>
+
+    <div class="section">
+      <div class="section-header">
+        <h2>Recent Activity</h2>
+      </div>
+      <% if (recent.length > 0) { %>
+      <ul class="request-list">
+        <% recent.forEach(req => { %>
+        <li class="request-item">
+          <div class="request-info">
+            <h3><%= req.id.substring(0, 8) %>... <span class="badge badge-<%= req.status %>"><%= req.status %></span></h3>
+            <div class="request-meta">
+              IP: <%= req.clientIp %> |
+              <%= new Date(req.createdAt).toLocaleString() %>
+            </div>
+          </div>
+          <div class="request-actions">
+            <a href="/admin/review/<%= req.id %>">View</a>
+          </div>
+        </li>
+        <% }); %>
+      </ul>
+      <% } else { %>
+      <div class="empty-state">
+        <p>No recent activity</p>
+      </div>
+      <% } %>
+    </div>
+  </div>
+
+  <script>
+    // Auto-refresh every 30 seconds
+    setTimeout(() => window.location.reload(), 30000);
+  </script>
+</body>
+</html>

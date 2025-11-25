@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title><%= title %></title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+    .card {
+      background: white;
+      border-radius: 16px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+      max-width: 480px;
+      width: 100%;
+      padding: 40px;
+    }
+    .spinner {
+      width: 64px;
+      height: 64px;
+      margin: 0 auto 24px;
+      position: relative;
+    }
+    .spinner::before {
+      content: '';
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      border: 4px solid #f0f0f0;
+      border-top-color: #f5576c;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+    h1 {
+      font-size: 24px;
+      color: #1a1a2e;
+      text-align: center;
+      margin-bottom: 8px;
+    }
+    .subtitle {
+      color: #666;
+      text-align: center;
+      margin-bottom: 32px;
+      font-size: 14px;
+    }
+    .request-info {
+      background: #f8f9fa;
+      border-radius: 12px;
+      padding: 20px;
+      margin-bottom: 24px;
+    }
+    .info-row {
+      display: flex;
+      justify-content: space-between;
+      padding: 8px 0;
+      border-bottom: 1px solid #e9ecef;
+      font-size: 14px;
+    }
+    .info-row:last-child {
+      border-bottom: none;
+    }
+    .info-label {
+      color: #666;
+    }
+    .info-value {
+      color: #333;
+      font-weight: 500;
+      text-align: right;
+      max-width: 200px;
+      word-break: break-all;
+    }
+    .status-badge {
+      display: inline-block;
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 600;
+      text-transform: uppercase;
+      background: #fff3cd;
+      color: #856404;
+    }
+    .reason-box {
+      background: #fff;
+      border: 1px solid #e9ecef;
+      border-radius: 8px;
+      padding: 12px;
+      margin-top: 12px;
+      font-size: 14px;
+      color: #555;
+      font-style: italic;
+    }
+    .btn-group {
+      display: flex;
+      gap: 12px;
+    }
+    .btn {
+      flex: 1;
+      padding: 14px 24px;
+      border: none;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .btn-primary {
+      background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+      color: white;
+    }
+    .btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 20px rgba(245, 87, 108, 0.4);
+    }
+    .btn-secondary {
+      background: #f8f9fa;
+      color: #666;
+      border: 1px solid #ddd;
+    }
+    .btn-secondary:hover {
+      background: #e9ecef;
+    }
+    .auto-refresh {
+      text-align: center;
+      font-size: 12px;
+      color: #999;
+      margin-top: 20px;
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="spinner"></div>
+    <h1>Awaiting Approval</h1>
+    <p class="subtitle">Your access request is being reviewed</p>
+
+    <div class="request-info">
+      <div class="info-row">
+        <span class="info-label">Request ID</span>
+        <span class="info-value"><%= request.id.substring(0, 8) %>...</span>
+      </div>
+      <div class="info-row">
+        <span class="info-label">Status</span>
+        <span class="info-value"><span class="status-badge">Pending</span></span>
+      </div>
+      <div class="info-row">
+        <span class="info-label">Submitted</span>
+        <span class="info-value"><%= new Date(request.createdAt).toLocaleString() %></span>
+      </div>
+      <% if (request.clientReason) { %>
+      <div class="reason-box">
+        "<%= request.clientReason %>"
+      </div>
+      <% } %>
+    </div>
+
+    <div class="btn-group">
+      <form method="post" action="/interaction/<%= uid %>/refresh" style="flex: 1;">
+        <button type="submit" class="btn btn-primary" style="width: 100%;">Check Status</button>
+      </form>
+      <form method="post" action="/interaction/<%= uid %>/cancel" style="flex: 1;">
+        <button type="submit" class="btn btn-secondary" style="width: 100%;">Cancel & Reapply</button>
+      </form>
+    </div>
+
+    <p class="auto-refresh">You can close this page. Return anytime to check your status.</p>
+  </div>
+
+  <script>
+    // Auto-refresh every 10 seconds
+    setTimeout(() => {
+      fetch('/api/request/<%= request.id %>/status')
+        .then(r => r.json())
+        .then(data => {
+          if (data.status !== 'pending') {
+            window.location.reload();
+          }
+        });
+    }, 10000);
+
+    // Refresh every 10 seconds
+    setInterval(() => {
+      fetch('/api/request/<%= request.id %>/status')
+        .then(r => r.json())
+        .then(data => {
+          if (data.status !== 'pending') {
+            window.location.reload();
+          }
+        });
+    }, 10000);
+  </script>
+</body>
+</html>

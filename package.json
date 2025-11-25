@@ -1,0 +1,23 @@
+{
+  "name": "cf-access-approval-shim",
+  "version": "1.0.0",
+  "description": "Cloudflare Access Custom IdP with Async Approval via Bark",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "start": "node --env-file=.env index.js",
+    "dev": "node --env-file=.env --watch index.js"
+  },
+  "dependencies": {
+    "better-sqlite3": "^11.6.0",
+    "cookie-parser": "^1.4.7",
+    "ejs": "^3.1.10",
+    "express": "^4.21.2",
+    "jsonwebtoken": "^9.0.2",
+    "oidc-provider": "^8.5.1",
+    "uuid": "^11.0.3"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  }
+}

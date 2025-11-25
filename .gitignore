@@ -1,0 +1,38 @@
+# Dependencies
+node_modules/
+
+# Database
+*.db
+*.db-wal
+*.db-shm
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Logs
+*.log
+npm-debug.log*
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Build
+dist/
+build/
+
+# pnpm (not used)
+pnpm-lock.yaml
+pnpm-workspace.yaml
+
+# Documentation dumps
+oidc-provider-docs.md
+oidc-provider.md

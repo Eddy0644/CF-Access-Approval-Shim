@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title><%= title %></title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #f5f6fa;
+      min-height: 100vh;
+    }
+    .header {
+      background: #1a1a2e;
+      color: white;
+      padding: 16px 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .header h1 {
+      font-size: 20px;
+      font-weight: 600;
+    }
+    .header a {
+      color: white;
+      text-decoration: none;
+      font-size: 14px;
+      opacity: 0.8;
+    }
+    .header a:hover {
+      opacity: 1;
+    }
+    .container {
+      max-width: 600px;
+      margin: 0 auto;
+      padding: 24px;
+    }
+    .card {
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      overflow: hidden;
+    }
+    .card-header {
+      background: #f8f9fa;
+      padding: 20px;
+      border-bottom: 1px solid #e9ecef;
+    }
+    .card-header h2 {
+      font-size: 18px;
+      color: #333;
+      margin-bottom: 4px;
+    }
+    .status-badge {
+      display: inline-block;
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 600;
+      text-transform: uppercase;
+    }
+    .status-pending {
+      background: #fff3cd;
+      color: #856404;
+    }
+    .status-approved {
+      background: #d4edda;
+      color: #155724;
+    }
+    .status-rejected {
+      background: #f8d7da;
+      color: #721c24;
+    }
+    .card-body {
+      padding: 20px;
+    }
+    .detail-row {
+      display: flex;
+      padding: 12px 0;
+      border-bottom: 1px solid #f0f0f0;
+    }
+    .detail-row:last-child {
+      border-bottom: none;
+    }
+    .detail-label {
+      width: 120px;
+      font-weight: 500;
+      color: #666;
+      flex-shrink: 0;
+    }
+    .detail-value {
+      color: #333;
+      word-break: break-all;
+    }
+    .reason-box {
+      background: #f8f9fa;
+      border-radius: 8px;
+      padding: 16px;
+      margin-top: 8px;
+      font-style: italic;
+      color: #555;
+    }
+    .action-section {
+      padding: 20px;
+      background: #f8f9fa;
+      border-top: 1px solid #e9ecef;
+    }
+    .action-buttons {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+    .btn {
+      flex: 1;
+      padding: 14px 24px;
+      border: none;
+      border-radius: 8px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: transform 0.2s, opacity 0.2s;
+    }
+    .btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+    .btn-approve {
+      background: #28a745;
+      color: white;
+    }
+    .btn-approve:hover:not(:disabled) {
+      background: #218838;
+    }
+    .btn-reject {
+      background: #dc3545;
+      color: white;
+    }
+    .btn-reject:hover:not(:disabled) {
+      background: #c82333;
+    }
+    .reject-form {
+      display: none;
+      margin-top: 16px;
+    }
+    .reject-form.show {
+      display: block;
+    }
+    .reject-form textarea {
+      width: 100%;
+      padding: 12px;
+      border: 2px solid #e0e0e0;
+      border-radius: 8px;
+      font-size: 14px;
+      font-family: inherit;
+      resize: vertical;
+      min-height: 80px;
+      margin-bottom: 12px;
+    }
+    .reject-form textarea:focus {
+      outline: none;
+      border-color: #dc3545;
+    }
+    .btn-submit-reject {
+      background: #dc3545;
+      color: white;
+      padding: 10px 20px;
+      border: none;
+      border-radius: 6px;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+    }
+    .result-box {
+      background: #e8f5e9;
+      border: 1px solid #c8e6c9;
+      border-radius: 8px;
+      padding: 16px;
+      margin-top: 16px;
+      color: #2e7d32;
+    }
+    .result-box.rejected {
+      background: #ffebee;
+      border-color: #ffcdd2;
+      color: #c62828;
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>Review Request</h1>
+    <a href="/admin">&larr; Back to Dashboard</a>
+  </div>
+
+  <div class="container">
+    <div class="card">
+      <div class="card-header">
+        <h2>Request <%= request.id.substring(0, 8) %>...</h2>
+        <span class="status-badge status-<%= request.status %>"><%= request.status %></span>
+      </div>
+
+      <div class="card-body">
+        <div class="detail-row">
+          <div class="detail-label">Request ID</div>
+          <div class="detail-value"><%= request.id %></div>
+        </div>
+        <div class="detail-row">
+          <div class="detail-label">Client IP</div>
+          <div class="detail-value"><%= request.clientIp %></div>
+        </div>
+        <div class="detail-row">
+          <div class="detail-label">Device</div>
+          <div class="detail-value"><%= request.deviceInfo || 'Unknown' %></div>
+        </div>
+        <div class="detail-row">
+          <div class="detail-label">Submitted</div>
+          <div class="detail-value"><%= new Date(request.createdAt).toLocaleString() %></div>
+        </div>
+        <% if (request.approvedAt) { %>
+        <div class="detail-row">
+          <div class="detail-label">Approved At</div>
+          <div class="detail-value"><%= new Date(request.approvedAt).toLocaleString() %></div>
+        </div>
+        <% } %>
+        <div class="detail-row">
+          <div class="detail-label">Reason</div>
+          <div class="detail-value">
+            <% if (request.clientReason) { %>
+            <div class="reason-box">"<%= request.clientReason %>"</div>
+            <% } else { %>
+            <em>No reason provided</em>
+            <% } %>
+          </div>
+        </div>
+        <% if (request.status === 'rejected' && request.rejectReason) { %>
+        <div class="detail-row">
+          <div class="detail-label">Reject Reason</div>
+          <div class="detail-value">
+            <div class="reason-box">"<%= request.rejectReason %>"</div>
+          </div>
+        </div>
+        <% } %>
+      </div>
+
+      <% if (request.status === 'pending') { %>
+      <div class="action-section">
+        <div class="action-buttons">
+          <form method="post" action="/admin/approve/<%= request.id %>" style="flex: 1;">
+            <button type="submit" class="btn btn-approve" style="width: 100%;">Approve</button>
+          </form>
+          <button type="button" class="btn btn-reject" onclick="toggleRejectForm()">Reject</button>
+        </div>
+
+        <form id="rejectForm" class="reject-form" method="post" action="/admin/reject/<%= request.id %>">
+          <textarea name="reason" placeholder="Enter rejection reason (optional)..."></textarea>
+          <button type="submit" class="btn-submit-reject">Confirm Rejection</button>
+        </form>
+      </div>
+      <% } else if (request.status === 'approved') { %>
+      <div class="action-section">
+        <div class="result-box">
+          This request has been approved. The user can now complete their login.
+        </div>
+      </div>
+      <% } else if (request.status === 'rejected') { %>
+      <div class="action-section">
+        <div class="result-box rejected">
+          This request has been rejected.
+        </div>
+      </div>
+      <% } %>
+    </div>
+  </div>
+
+  <script>
+    function toggleRejectForm() {
+      const form = document.getElementById('rejectForm');
+      form.classList.toggle('show');
+      if (form.classList.contains('show')) {
+        form.querySelector('textarea').focus();
+      }
+    }
+  </script>
+</body>
+</html>
