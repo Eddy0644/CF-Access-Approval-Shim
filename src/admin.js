@@ -151,6 +151,8 @@ export const createAdminRouter = () => {
       title: 'Review Request',
       request,
       admin: req.admin,
+      sessionDurations: config.sessionDurations,
+      sessionDurationDefault: config.sessionDurationDefault,
     });
   });
 
@@ -159,6 +161,7 @@ export const createAdminRouter = () => {
    */
   router.post('/admin/approve/:requestId', requireAuth, (req, res) => {
     const { requestId } = req.params;
+    const { duration } = req.body;
     const request = RequestStore.get(requestId);
 
     if (!request) {
@@ -169,15 +172,17 @@ export const createAdminRouter = () => {
       return res.status(400).json({ error: `Request already ${request.status}` });
     }
 
-    const success = RequestStore.approve(requestId);
+    // Use provided duration or default
+    const sessionDuration = duration || config.sessionDurationDefault;
+    const success = RequestStore.approve(requestId, sessionDuration);
 
     if (success) {
-      logger.adminAction(requestId, 'APPROVED', req.admin.user);
+      logger.adminAction(requestId, `APPROVED (duration: ${sessionDuration})`, req.admin.user);
     }
 
     // Check if this is an API call or form submission
     if (req.headers.accept?.includes('application/json')) {
-      return res.json({ success, status: 'approved' });
+      return res.json({ success, status: 'approved', sessionDuration });
     }
 
     return res.redirect('/admin');
@@ -228,6 +233,31 @@ export const createAdminRouter = () => {
       status: request.status,
       rejectReason: request.rejectReason,
     });
+  });
+
+  /**
+   * Update admin note for a request
+   */
+  router.post('/admin/note/:requestId', requireAuth, (req, res) => {
+    const { requestId } = req.params;
+    const { note } = req.body;
+    const request = RequestStore.get(requestId);
+
+    if (!request) {
+      return res.status(404).json({ error: 'Request not found' });
+    }
+
+    const success = RequestStore.updateNote(requestId, note || '');
+
+    if (success) {
+      logger.adminAction(requestId, 'NOTE_UPDATED', req.admin.user);
+    }
+
+    if (req.headers.accept?.includes('application/json')) {
+      return res.json({ success });
+    }
+
+    return res.redirect(`/admin/review/${requestId}`);
   });
 
   return router;

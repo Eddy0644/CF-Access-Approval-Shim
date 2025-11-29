@@ -1,5 +1,6 @@
 import { v4 as uuidv4 } from 'uuid';
 import { getDb } from './database.js';
+import logger from './logger.js';
 
 /**
  * Request Store for managing authentication approval requests
@@ -38,7 +39,7 @@ export const RequestStore = {
     const db = getDb();
     const stmt = db.prepare(`
       SELECT id, status, client_reason, reject_reason, client_ip, device_info,
-             created_at, updated_at, approved_at
+             created_at, updated_at, approved_at, session_duration, admin_note
       FROM auth_requests WHERE id = ?
     `);
 
@@ -55,24 +56,34 @@ export const RequestStore = {
       createdAt: row.created_at,
       updatedAt: row.updated_at,
       approvedAt: row.approved_at,
+      sessionDuration: row.session_duration,
+      adminNote: row.admin_note,
     };
   },
 
   /**
-   * Approve a request
+   * Approve a request with optional session duration
    */
-  approve(id) {
+  approve(id, sessionDuration = null) {
     const db = getDb();
     const now = Date.now();
 
-    const stmt = db.prepare(`
-      UPDATE auth_requests
-      SET status = 'approved', updated_at = ?, approved_at = ?
-      WHERE id = ? AND status = 'pending'
-    `);
+    logger.debug('Store.approve called', { id, sessionDuration, now });
 
-    const result = stmt.run(now, now, id);
-    return result.changes > 0;
+    try {
+      const stmt = db.prepare(`
+        UPDATE auth_requests
+        SET status = 'approved', updated_at = ?, approved_at = ?, session_duration = ?
+        WHERE id = ? AND status = 'pending'
+      `);
+
+      const result = stmt.run(now, now, sessionDuration, id);
+      logger.debug('Store.approve result', { changes: result.changes });
+      return result.changes > 0;
+    } catch (err) {
+      logger.error('Store.approve failed', err);
+      throw err;
+    }
   },
 
   /**
@@ -99,6 +110,23 @@ export const RequestStore = {
     const db = getDb();
     const stmt = db.prepare(`DELETE FROM auth_requests WHERE id = ?`);
     const result = stmt.run(id);
+    return result.changes > 0;
+  },
+
+  /**
+   * Update admin note for a request
+   */
+  updateNote(id, note) {
+    const db = getDb();
+    const now = Date.now();
+
+    const stmt = db.prepare(`
+      UPDATE auth_requests
+      SET admin_note = ?, updated_at = ?
+      WHERE id = ?
+    `);
+
+    const result = stmt.run(note, now, id);
     return result.changes > 0;
   },
 
@@ -131,7 +159,7 @@ export const RequestStore = {
     const db = getDb();
     const stmt = db.prepare(`
       SELECT id, status, client_reason, reject_reason, client_ip, device_info,
-             created_at, updated_at, approved_at
+             created_at, updated_at, approved_at, session_duration, admin_note
       FROM auth_requests
       ORDER BY created_at DESC
       LIMIT ?
@@ -147,6 +175,8 @@ export const RequestStore = {
       createdAt: row.created_at,
       updatedAt: row.updated_at,
       approvedAt: row.approved_at,
+      sessionDuration: row.session_duration,
+      adminNote: row.admin_note,
     }));
   },
 

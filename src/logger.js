@@ -62,7 +62,14 @@ export const logger = {
   },
 
   error: (context, error) => {
-    console.error(formatMessage('ERROR', context, error.message || error));
+    const errorInfo = error instanceof Error
+      ? { message: error.message, stack: error.stack }
+      : error;
+    console.error(formatMessage('ERROR', context, errorInfo));
+  },
+
+  warn: (message, data = null) => {
+    console.warn(formatMessage('WARN', message, data));
   },
 
   info: (message, data = null) => {
@@ -72,6 +79,12 @@ export const logger = {
   debug: (message, data = null) => {
     if (process.env.DEBUG) {
       console.log(formatMessage('DEBUG', message, data));
+    }
+  },
+
+  db: (operation, params = null) => {
+    if (process.env.DEBUG) {
+      console.log(formatMessage('DB_OP', operation, params));
     }
   },
 };

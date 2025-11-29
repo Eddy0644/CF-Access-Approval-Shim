@@ -117,7 +117,7 @@ const oidcConfig = {
     AuthorizationCode: 10 * 60, // 10 minutes
     IdToken: 60 * 60, // 1 hour
     RefreshToken: 24 * 60 * 60, // 1 day
-    Interaction: 60 * 60, // 1 hour
+    Interaction: 24 * 60 * 60, // 24 hours (extended for async approval flow)
     Session: 24 * 60 * 60, // 1 day
     Grant: 24 * 60 * 60, // 1 day
   },
@@ -127,9 +127,10 @@ const oidcConfig = {
 
   // Account/claims finding
   findAccount: async (ctx, id) => {
-    // Look up the request to get approval time
+    // Look up the request to get approval time and session duration
     const request = RequestStore.get(id);
     const approvedAt = request?.approvedAt || Date.now();
+    const sessionDuration = request?.sessionDuration || config.sessionDurationDefault;
 
     // Format date for email based on config format
     const formatDate = (ts, format) => {
@@ -153,7 +154,9 @@ const oidcConfig = {
     };
 
     const emailPrefix = formatDate(approvedAt, config.emailFormat);
-    const email = `${emailPrefix}@${config.emailDomain}`;
+    // Replace {duration} placeholder in domain with actual session duration
+    const emailDomain = config.emailDomain.replace('{duration}', sessionDuration);
+    const email = `${emailPrefix}@${emailDomain}`;
     const name = `Guest ${id.substring(0, 8)}`;
 
     return {
@@ -182,6 +185,17 @@ const oidcConfig = {
   // Render errors nicely
   renderError: async (ctx, out, error) => {
     ctx.type = 'html';
+
+    // Special handling for invalid_request error - this often happens after approval
+    const isInvalidRequest = out.error === 'invalid_request';
+    const helpText = isInvalidRequest
+      ? `<div class="help-box">
+          <h3>Seeing this after approval?</h3>
+          <p>If your request was approved, this page may appear because the original login session expired.</p>
+          <p><strong>Solution:</strong> Simply re-open the URL you originally wanted to access and try again. Your approval is still valid!</p>
+        </div>`
+      : '';
+
     ctx.body = `<!DOCTYPE html>
 <html>
 <head>
@@ -190,7 +204,10 @@ const oidcConfig = {
   <title>Error</title>
   <style>
     body { font-family: -apple-system, BlinkMacSystemFont, sans-serif; max-width: 600px; margin: 50px auto; padding: 20px; }
-    .error { background: #fee; border: 1px solid #fcc; padding: 20px; border-radius: 8px; }
+    .error { background: #fee; border: 1px solid #fcc; padding: 20px; border-radius: 8px; margin-bottom: 20px; }
+    .help-box { background: #e8f5e9; border: 1px solid #c8e6c9; padding: 20px; border-radius: 8px; }
+    .help-box h3 { margin-top: 0; color: #2e7d32; }
+    .help-box p { margin: 10px 0; color: #1b5e20; }
     pre { background: #f5f5f5; padding: 10px; overflow: auto; }
   </style>
 </head>
@@ -199,6 +216,7 @@ const oidcConfig = {
     <h1>Authentication Error</h1>
     <p>${out.error}: ${out.error_description || 'An error occurred'}</p>
   </div>
+  ${helpText}
 </body>
 </html>`;
   },

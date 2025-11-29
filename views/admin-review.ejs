@@ -189,6 +189,65 @@
       border-color: #ffcdd2;
       color: #c62828;
     }
+    .note-section {
+      padding: 20px;
+      border-top: 1px solid #e9ecef;
+    }
+    .note-form label {
+      display: block;
+      font-weight: 500;
+      color: #666;
+      margin-bottom: 8px;
+    }
+    .note-form textarea {
+      width: 100%;
+      padding: 12px;
+      border: 2px solid #e0e0e0;
+      border-radius: 8px;
+      font-size: 14px;
+      font-family: inherit;
+      resize: vertical;
+      min-height: 80px;
+      margin-bottom: 12px;
+    }
+    .note-form textarea:focus {
+      outline: none;
+      border-color: #1a1a2e;
+    }
+    .btn-save-note {
+      background: #1a1a2e;
+      color: white;
+      padding: 10px 20px;
+      border: none;
+      border-radius: 6px;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+    }
+    .btn-save-note:hover {
+      background: #2d2d4a;
+    }
+    .duration-section {
+      margin-bottom: 16px;
+    }
+    .duration-section label {
+      font-weight: 500;
+      color: #666;
+      margin-right: 12px;
+    }
+    .duration-section select {
+      padding: 8px 16px;
+      border: 2px solid #e0e0e0;
+      border-radius: 6px;
+      font-size: 14px;
+      font-family: inherit;
+      background: white;
+      cursor: pointer;
+    }
+    .duration-section select:focus {
+      outline: none;
+      border-color: #28a745;
+    }
   </style>
 </head>
 <body>
@@ -245,12 +304,35 @@
           </div>
         </div>
         <% } %>
+        <% if (request.sessionDuration) { %>
+        <div class="detail-row">
+          <div class="detail-label">Session Duration</div>
+          <div class="detail-value"><%= request.sessionDuration %></div>
+        </div>
+        <% } %>
+      </div>
+
+      <!-- Admin Note Section -->
+      <div class="note-section">
+        <form method="post" action="/admin/note/<%= request.id %>" class="note-form">
+          <label for="admin-note">Admin Note</label>
+          <textarea id="admin-note" name="note" placeholder="Add notes about this request (only visible to admins)..."><%= request.adminNote || '' %></textarea>
+          <button type="submit" class="btn-save-note">Save Note</button>
+        </form>
       </div>
 
       <% if (request.status === 'pending') { %>
       <div class="action-section">
+        <div class="duration-section">
+          <label for="duration">Session Duration:</label>
+          <select id="duration" name="duration" form="approve-form">
+            <% sessionDurations.forEach(d => { %>
+            <option value="<%= d %>" <%= d === sessionDurationDefault ? 'selected' : '' %>><%= d %></option>
+            <% }); %>
+          </select>
+        </div>
         <div class="action-buttons">
-          <form method="post" action="/admin/approve/<%= request.id %>" style="flex: 1;">
+          <form id="approve-form" method="post" action="/admin/approve/<%= request.id %>" style="flex: 1;">
             <button type="submit" class="btn btn-approve" style="width: 100%;">Approve</button>
           </form>
           <button type="button" class="btn btn-reject" onclick="toggleRejectForm()">Reject</button>

@@ -37,8 +37,50 @@ export const createInteractionRouter = (oidc) => {
 
       logger.interactionStart(uid, clientIp);
 
-      // Get the OIDC interaction details
-      const interactionDetails = await oidc.interactionDetails(req, res);
+      // Check for existing request ID in cookie FIRST
+      // This allows us to show appropriate UI even if OIDC session expired
+      const requestId = req.cookies[config.cookieName];
+      const existingRequest = requestId ? RequestStore.get(requestId) : null;
+
+      // Try to get OIDC interaction details
+      let interactionDetails;
+      try {
+        interactionDetails = await oidc.interactionDetails(req, res);
+      } catch (interactionErr) {
+        // OIDC interaction session expired or invalid
+        logger.debug('Interaction session error', { error: interactionErr.message });
+
+        // If user has an approved request, show them a helpful message
+        if (existingRequest?.status === 'approved') {
+          return res.render('approved-expired', {
+            title: 'Request Approved',
+            request: existingRequest,
+          });
+        }
+
+        // If user has a pending request, show them the waiting page with a note
+        if (existingRequest?.status === 'pending') {
+          return res.render('waiting-expired', {
+            title: 'Awaiting Approval',
+            request: existingRequest,
+          });
+        }
+
+        // If user has a rejected request
+        if (existingRequest?.status === 'rejected') {
+          res.clearCookie(config.cookieName);
+          return res.render('rejected', {
+            uid: null,
+            request: existingRequest,
+            title: 'Access Denied',
+            sessionExpired: true,
+          });
+        }
+
+        // No valid request, re-throw to show error
+        throw interactionErr;
+      }
+
       const { prompt, params, session } = interactionDetails;
 
       logger.debug('Interaction prompt', { name: prompt.name, details: prompt.details });
@@ -74,10 +116,6 @@ export const createInteractionRouter = (oidc) => {
       }
 
       // For login prompt, check our approval flow
-      // Check for existing request ID in cookie
-      const requestId = req.cookies[config.cookieName];
-      const existingRequest = requestId ? RequestStore.get(requestId) : null;
-
       // Scenario A: No cookie or cookie invalid - show apply page
       if (!existingRequest) {
         return res.render('apply', {

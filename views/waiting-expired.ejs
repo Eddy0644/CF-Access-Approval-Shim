@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title><%= title %></title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+    .card {
+      background: white;
+      border-radius: 16px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+      max-width: 440px;
+      width: 100%;
+      padding: 40px;
+      text-align: center;
+    }
+    .spinner {
+      width: 60px;
+      height: 60px;
+      border: 4px solid #f0f0f0;
+      border-top-color: #667eea;
+      border-radius: 50%;
+      margin: 0 auto 24px;
+      animation: spin 1s linear infinite;
+    }
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+    h1 {
+      font-size: 22px;
+      color: #333;
+      margin-bottom: 12px;
+    }
+    .message {
+      color: #666;
+      font-size: 14px;
+      line-height: 1.6;
+      margin-bottom: 24px;
+    }
+    .help-box {
+      background: #fff3cd;
+      border: 1px solid #ffc107;
+      border-radius: 8px;
+      padding: 16px;
+      margin-bottom: 24px;
+      text-align: left;
+    }
+    .help-box h3 {
+      color: #856404;
+      font-size: 14px;
+      margin-bottom: 8px;
+    }
+    .help-box p {
+      color: #856404;
+      font-size: 13px;
+      margin: 0;
+    }
+    .info {
+      font-size: 12px;
+      color: #888;
+      margin-top: 8px;
+    }
+    .status-api {
+      margin-top: 16px;
+      padding: 12px;
+      background: #f8f9fa;
+      border-radius: 8px;
+      font-size: 13px;
+      color: #666;
+    }
+    .status-checking {
+      color: #fd7e14;
+    }
+    .status-approved {
+      background: #d4edda;
+      color: #155724;
+    }
+    .status-rejected {
+      background: #f8d7da;
+      color: #721c24;
+    }
+    .btn {
+      display: inline-block;
+      margin-top: 16px;
+      padding: 12px 24px;
+      background: #667eea;
+      color: white;
+      text-decoration: none;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 500;
+    }
+    .btn:hover {
+      background: #5a6fd6;
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="spinner" id="spinner"></div>
+    <h1 id="title">Awaiting Approval</h1>
+    <p class="message" id="message">
+      Your request is pending approval from the administrator.
+    </p>
+    <div class="help-box">
+      <h3>Session Expired</h3>
+      <p>
+        The login session has expired, but your request is still being processed.
+        Once approved, please <strong>re-open the URL you wanted to access</strong> to complete login.
+      </p>
+    </div>
+    <div id="status" class="status-api">
+      Next check in 5 seconds...
+    </div>
+    <p class="info">
+      Request ID: <%= request.id.substring(0, 8) %>...<br>
+      Submitted: <%= new Date(request.createdAt).toLocaleString() %>
+    </p>
+  </div>
+
+  <script>
+    const requestId = '<%= request.id %>';
+    const INTERVAL = 6;
+    let countdown = INTERVAL;
+    let isChecking = false;
+
+    const statusEl = document.getElementById('status');
+    const titleEl = document.getElementById('title');
+    const messageEl = document.getElementById('message');
+    const spinnerEl = document.getElementById('spinner');
+
+    function updateCountdown() {
+      if (isChecking) return;
+
+      countdown--;
+
+      if (countdown > 0) {
+        statusEl.textContent = `Next check in ${countdown} second${countdown > 1 ? 's' : ''}...`;
+        statusEl.className = 'status-api';
+      } else if (countdown === 0) {
+        statusEl.textContent = 'Checking now...';
+        statusEl.className = 'status-api status-checking';
+        checkStatus();
+      }
+    }
+
+    async function checkStatus() {
+      if (isChecking) return;
+      isChecking = true;
+
+      statusEl.textContent = 'Checking status...';
+      statusEl.className = 'status-api status-checking';
+
+      try {
+        const response = await fetch(`/api/request/${requestId}/status`);
+        const data = await response.json();
+
+        if (data.status === 'approved') {
+          statusEl.className = 'status-api status-approved';
+          statusEl.innerHTML = '<strong>Approved!</strong> Please re-open the URL you wanted to access.';
+          titleEl.textContent = 'Request Approved!';
+          messageEl.textContent = 'Your access has been granted.';
+          spinnerEl.style.borderTopColor = '#28a745';
+          return; // Stop polling
+        } else if (data.status === 'rejected') {
+          statusEl.className = 'status-api status-rejected';
+          statusEl.innerHTML = '<strong>Rejected.</strong> ' + (data.rejectReason || 'No reason provided.');
+          titleEl.textContent = 'Request Rejected';
+          messageEl.textContent = 'Your access request was not approved.';
+          spinnerEl.style.borderTopColor = '#dc3545';
+          return; // Stop polling
+        }
+
+        // Still pending - reset countdown
+        countdown = INTERVAL;
+        statusEl.textContent = `Next check in ${countdown} seconds...`;
+        statusEl.className = 'status-api';
+        isChecking = false;
+
+      } catch (e) {
+        console.error('Status check failed:', e);
+        countdown = INTERVAL + 4;
+        statusEl.textContent = `Network error. Retrying in ${countdown} seconds...`;
+        statusEl.className = 'status-api';
+        isChecking = false;
+      }
+    }
+
+    // Start countdown timer
+    setInterval(updateCountdown, 1000);
+
+    // Initial countdown
+    setTimeout(() => {
+      countdown = INTERVAL;
+      updateCountdown();
+    }, 1000);
+  </script>
+</body>
+</html>

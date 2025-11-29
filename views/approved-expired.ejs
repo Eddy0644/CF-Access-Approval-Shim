@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title><%= title %></title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: linear-gradient(135deg, #1a5f2a 0%, #0d3015 100%);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+    .card {
+      background: white;
+      border-radius: 16px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.4);
+      max-width: 480px;
+      width: 100%;
+      padding: 40px;
+      text-align: center;
+    }
+    .icon {
+      width: 80px;
+      height: 80px;
+      background: #d4edda;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 24px;
+    }
+    .icon svg {
+      width: 40px;
+      height: 40px;
+      fill: #28a745;
+    }
+    h1 {
+      font-size: 24px;
+      color: #155724;
+      margin-bottom: 16px;
+    }
+    .message {
+      color: #666;
+      font-size: 15px;
+      line-height: 1.6;
+      margin-bottom: 24px;
+    }
+    .help-box {
+      background: #fff3cd;
+      border: 1px solid #ffc107;
+      border-radius: 8px;
+      padding: 16px;
+      margin-bottom: 24px;
+      text-align: left;
+    }
+    .help-box h3 {
+      color: #856404;
+      font-size: 14px;
+      margin-bottom: 8px;
+    }
+    .help-box p {
+      color: #856404;
+      font-size: 13px;
+      margin: 0;
+    }
+    .info {
+      font-size: 12px;
+      color: #888;
+      margin-top: 16px;
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="icon">
+      <svg viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
+    </div>
+    <h1>Your Request Was Approved!</h1>
+    <p class="message">
+      Your access request has been approved by the administrator.
+    </p>
+    <div class="help-box">
+      <h3>Next Step</h3>
+      <p>
+        The original login session has expired, but your approval is still valid.
+        Please <strong>close this page and re-open the URL you wanted to access</strong>.
+        You will be logged in automatically.
+      </p>
+    </div>
+    <p class="info">
+      Request ID: <%= request.id.substring(0, 8) %>...<br>
+      Approved at: <%= new Date(request.approvedAt).toLocaleString() %>
+      <% if (request.sessionDuration) { %><br>Session Duration: <%= request.sessionDuration %><% } %>
+    </p>
+  </div>
+</body>
+</html>

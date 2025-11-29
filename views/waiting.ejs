@@ -136,17 +136,39 @@
     }
     .auto-refresh {
       text-align: center;
+      font-size: 13px;
+      color: #666;
+      margin-top: 20px;
+      padding: 12px;
+      background: #f8f9fa;
+      border-radius: 8px;
+    }
+    .refresh-status {
+      font-weight: 500;
+      color: #f5576c;
+    }
+    .refresh-status.checking {
+      color: #fd7e14;
+    }
+    .refresh-status.approved {
+      color: #28a745;
+    }
+    .refresh-status.rejected {
+      color: #dc3545;
+    }
+    .close-hint {
+      text-align: center;
       font-size: 12px;
       color: #999;
-      margin-top: 20px;
+      margin-top: 12px;
     }
   </style>
 </head>
 <body>
   <div class="card">
-    <div class="spinner"></div>
-    <h1>Awaiting Approval</h1>
-    <p class="subtitle">Your access request is being reviewed</p>
+    <div class="spinner" id="spinner"></div>
+    <h1 id="title">Awaiting Approval</h1>
+    <p class="subtitle" id="subtitle">Your access request is being reviewed</p>
 
     <div class="request-info">
       <div class="info-row">
@@ -170,38 +192,116 @@
 
     <div class="btn-group">
       <form method="post" action="/interaction/<%= uid %>/refresh" style="flex: 1;">
-        <button type="submit" class="btn btn-primary" style="width: 100%;">Check Status</button>
+        <button type="submit" class="btn btn-primary" style="width: 100%;" id="checkBtn">Check Status</button>
       </form>
       <form method="post" action="/interaction/<%= uid %>/cancel" style="flex: 1;">
         <button type="submit" class="btn btn-secondary" style="width: 100%;">Cancel & Reapply</button>
       </form>
     </div>
 
-    <p class="auto-refresh">You can close this page. Return anytime to check your status.</p>
+    <div class="auto-refresh">
+      <span id="refresh-status" class="refresh-status">Next check in 5 seconds...</span>
+    </div>
+    <p class="close-hint">You can close this page. Return anytime to check your status.</p>
   </div>
 
   <script>
-    // Auto-refresh every 10 seconds
-    setTimeout(() => {
-      fetch('/api/request/<%= request.id %>/status')
-        .then(r => r.json())
-        .then(data => {
-          if (data.status !== 'pending') {
-            window.location.reload();
-          }
-        });
-    }, 10000);
+    const requestId = '<%= request.id %>';
+    const INTERVAL = 6; // seconds between checks
+    let countdown = INTERVAL;
+    let isChecking = false;
 
-    // Refresh every 10 seconds
-    setInterval(() => {
-      fetch('/api/request/<%= request.id %>/status')
-        .then(r => r.json())
-        .then(data => {
-          if (data.status !== 'pending') {
+    const statusEl = document.getElementById('refresh-status');
+    const titleEl = document.getElementById('title');
+    const subtitleEl = document.getElementById('subtitle');
+    const spinnerEl = document.getElementById('spinner');
+    const checkBtn = document.getElementById('checkBtn');
+
+    function updateCountdown() {
+      if (isChecking) return;
+
+      countdown--;
+
+      if (countdown > 0) {
+        statusEl.textContent = `Next check in ${countdown} second${countdown > 1 ? 's' : ''}...`;
+        statusEl.className = 'refresh-status';
+      } else if (countdown === 0) {
+        statusEl.textContent = 'Checking now...';
+        statusEl.className = 'refresh-status checking';
+        checkStatus();
+      }
+    }
+
+    async function checkStatus() {
+      if (isChecking) return;
+      isChecking = true;
+
+      statusEl.textContent = 'Checking status...';
+      statusEl.className = 'refresh-status checking';
+      checkBtn.disabled = true;
+      checkBtn.textContent = 'Checking...';
+
+      try {
+        const response = await fetch(`/api/request/${requestId}/status`);
+        const data = await response.json();
+
+        if (data.status === 'approved') {
+          // Approved - show success and redirect
+          statusEl.textContent = 'Approved! Redirecting...';
+          statusEl.className = 'refresh-status approved';
+          titleEl.textContent = 'Request Approved!';
+          subtitleEl.textContent = 'Redirecting to complete login...';
+          spinnerEl.style.borderTopColor = '#28a745';
+          checkBtn.textContent = 'Approved!';
+
+          // Reload page to trigger the OIDC flow completion
+          setTimeout(() => {
             window.location.reload();
-          }
-        });
-    }, 10000);
+          }, 500);
+          return;
+        } else if (data.status === 'rejected') {
+          // Rejected - show message and redirect
+          statusEl.textContent = 'Request rejected';
+          statusEl.className = 'refresh-status rejected';
+          titleEl.textContent = 'Request Rejected';
+          subtitleEl.textContent = data.rejectReason || 'Your request was not approved';
+          spinnerEl.style.borderTopColor = '#dc3545';
+          checkBtn.textContent = 'Rejected';
+
+          setTimeout(() => {
+            window.location.reload();
+          }, 1500);
+          return;
+        }
+
+        // Still pending - reset countdown
+        countdown = INTERVAL;
+        statusEl.textContent = `Next check in ${countdown} seconds...`;
+        statusEl.className = 'refresh-status';
+        checkBtn.disabled = false;
+        checkBtn.textContent = 'Check Status';
+        isChecking = false;
+
+      } catch (error) {
+        console.error('Status check failed:', error);
+        // On error, retry after a longer interval
+        countdown = INTERVAL + 4;
+        statusEl.textContent = `Network error. Retrying in ${countdown} seconds...`;
+        statusEl.className = 'refresh-status';
+        checkBtn.disabled = false;
+        checkBtn.textContent = 'Check Status';
+        isChecking = false;
+      }
+    }
+
+    // Start countdown timer (every 1 second)
+    setInterval(updateCountdown, 1000);
+
+    // Initial check after page load
+    setTimeout(() => {
+      countdown = INTERVAL;
+      updateCountdown();
+    }, 1000);
   </script>
 </body>
 </html>

@@ -15,11 +15,18 @@ export const config = {
   redirectUri: process.env.REDIRECT_URI || 'https://placeholder.cloudflareaccess.com/cdn-cgi/access/callback',
 
   // Email format for approved users
-  emailDomain: process.env.EMAIL_DOMAIN || 'access-granted.com',
+  // {duration} placeholder in emailDomain will be replaced with session duration
+  emailDomain: process.env.EMAIL_DOMAIN || '{duration}.access-granted.com',
   emailFormat: process.env.EMAIL_FORMAT || 'YYYYMMDDHHmmss', // Date format for email prefix
+
+  // Session duration options (for admin to select during approval)
+  sessionDurations: (process.env.SESSION_DURATIONS || '30m,1h,12h,1d,7d,30d,long').split(',').map(s => s.trim()),
+  sessionDurationDefault: process.env.SESSION_DURATION_DEFAULT || '1d',
 
   // Bark notification
   barkUrlTemplate: process.env.BARK_URL_TEMPLATE || 'https://api.day.app/YOUR_KEY/AuthRequest/{body}?url={url}',
+  // Bark body template with available variables: {id}, {id_short}, {ip}, {reason}, {device}, {time}
+  barkBodyTemplate: process.env.BARK_BODY_TEMPLATE || null, // null means use default
 
   // Admin credentials
   adminUser: process.env.ADMIN_USER || 'a',

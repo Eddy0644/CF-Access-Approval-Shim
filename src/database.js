@@ -21,9 +21,23 @@ export const initDatabase = () => {
       device_info TEXT,
       created_at INTEGER NOT NULL,
       updated_at INTEGER NOT NULL,
-      approved_at INTEGER
+      approved_at INTEGER,
+      session_duration TEXT,
+      admin_note TEXT
     )
   `);
+
+  // Add new columns if they don't exist (for existing databases)
+  try {
+    db.exec(`ALTER TABLE auth_requests ADD COLUMN session_duration TEXT`);
+  } catch (e) {
+    // Column already exists, ignore
+  }
+  try {
+    db.exec(`ALTER TABLE auth_requests ADD COLUMN admin_note TEXT`);
+  } catch (e) {
+    // Column already exists, ignore
+  }
 
   // Create tables for OIDC provider data persistence
   db.exec(`
